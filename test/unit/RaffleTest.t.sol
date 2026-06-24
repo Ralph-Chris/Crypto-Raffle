@@ -7,8 +7,7 @@ import {Raffle} from "src/Raffle.sol";
 import {Vm} from "forge-std/Base.sol";
 import {VRFCoordinatorV2_5Mock} from "@chainlink/src/v0.8/vrf/mocks/VRFCoordinatorV2_5Mock.sol";
 
-contract TestRaffle is Test{
-
+contract TestRaffle is Test {
     address private PLAYER = makeAddr("chris");
     uint256 private BALANCE = 50 ether;
     uint256 private enteranceFee;
@@ -16,12 +15,10 @@ contract TestRaffle is Test{
     uint256 interval;
     address vrfCoordinator;
 
-
-
     Raffle raffle;
     HelperConfig helperConfig;
 
-    event Players (address indexed player);
+    event Players(address indexed player);
 
     modifier joining() {
         vm.prank(PLAYER);
@@ -37,18 +34,19 @@ contract TestRaffle is Test{
 
     modifier passTime() {
         vm.warp(block.timestamp + interval + 1);
-        vm.roll (block.number +1 );
+        vm.roll(block.number + 1);
         _;
     }
 
     modifier onlyAnvil() {
-        if(block.chainid != 31337) {
+        if (block.chainid != 31337) {
             revert();
-        }_;
+        }
+        _;
     }
 
     function setUp() public {
-        vm.roll(block.number +1);
+        vm.roll(block.number + 1);
         DeployRaffle deployer = new DeployRaffle();
         (raffle, helperConfig) = deployer.deployContract();
         HelperConfig.NetworkConfig memory config = helperConfig.getConfig();
@@ -57,7 +55,6 @@ contract TestRaffle is Test{
         account = config.account;
         interval = config.interval;
         vrfCoordinator = config.vrfCoordinator;
-
     }
 
     function testCanJoinRaffleWithEnoughEnteranceFee() public {
@@ -99,18 +96,17 @@ contract TestRaffle is Test{
 
     function testPeformUpkeepPassWhenAllConditionsAreMet() public joining {
         vm.warp(block.timestamp + interval + 1);
-        vm.roll(block.number +1 );
+        vm.roll(block.number + 1);
         bool state = raffle.checkUpkeep();
-        assert (state == true);
+        assert(state == true);
     }
 
     function testPeformUpkeepIsCalculating() public joining passTime {
         raffle.performUpkeep();
         vm.expectRevert(Raffle.Raffle__RaffleIsPickingWinner.selector);
-        raffle.joinRaffle{value:enteranceFee}();
+        raffle.joinRaffle{value: enteranceFee}();
         Raffle.RaffleState state = raffle.getRaffleState();
-        assert (state == Raffle.RaffleState.PICKING_WINNER);
-
+        assert(state == Raffle.RaffleState.PICKING_WINNER);
     }
 
     function testPeformUupkeepReturnsRequestId() public joining passTime {
@@ -121,7 +117,7 @@ contract TestRaffle is Test{
         Raffle.RaffleState raffleState = raffle.getRaffleState();
 
         assert(raffleState == Raffle.RaffleState.PICKING_WINNER);
-        assert( uint256(requestId) > 0);
+        assert(uint256(requestId) > 0);
     }
 
     function testFulfillRandomWords() public joining passTime onlyAnvil {
@@ -131,22 +127,20 @@ contract TestRaffle is Test{
         bytes32 requestId = entries[1].topics[1];
 
         VRFCoordinatorV2_5Mock(vrfCoordinator).fulfillRandomWords(uint256(requestId), address(raffle));
-
-
     }
 
-    function testJoinRaffleWithMultiplePlayersAndPickingWinner() public onlyAnvil { 
+    function testJoinRaffleWithMultiplePlayersAndPickingWinner() public onlyAnvil {
         uint160 startIndex = 1;
         uint160 endIndex = 10;
-        for (uint160 i=startIndex; i<endIndex; i++) {
+        for (uint160 i = startIndex; i < endIndex; i++) {
             address player = address(uint160(i));
             hoax(player, 1 ether);
             raffle.joinRaffle{value: 1 ether}();
         }
 
-        vm.warp(block.timestamp + interval +1 );
+        vm.warp(block.timestamp + interval + 1);
         vm.roll(block.number + 1);
-        
+
         vm.recordLogs();
         raffle.performUpkeep();
         Vm.Log[] memory entries = vm.getRecordedLogs();
@@ -157,9 +151,8 @@ contract TestRaffle is Test{
         uint256 winnerBal = address(winner).balance;
 
         console.log("recent winner is: ", winner);
-        assert (winnerBal > 8);
-        assert (state == Raffle.RaffleState.OPEN);
-
+        assert(winnerBal > 8);
+        assert(state == Raffle.RaffleState.OPEN);
     }
 
     function testBadWinnerRewardFails() public joining {

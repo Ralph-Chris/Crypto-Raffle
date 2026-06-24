@@ -15,7 +15,6 @@ import {VRFConsumerBaseV2Plus} from "@chainlink/src/v0.8/vrf/dev/VRFConsumerBase
 import {VRFV2PlusClient} from "@chainlink/src/v0.8/vrf/dev/libraries/VRFV2PlusClient.sol";
 
 contract Raffle is VRFConsumerBaseV2Plus {
-
     /* Errors */
     error Raffle__EnteranceFeeNotMet();
     error Raffle__RaffleIsPickingWinner();
@@ -23,10 +22,10 @@ contract Raffle is VRFConsumerBaseV2Plus {
     error Raffle__RewardFailed();
 
     /* Type Deceleration */
-    enum RaffleState{
+    enum RaffleState {
         OPEN,
         PICKING_WINNER
-    } 
+    }
     /* State Variable */
     uint256 private immutable i_enteranceFee;
     uint256 private immutable i_interval;
@@ -41,32 +40,34 @@ contract Raffle is VRFConsumerBaseV2Plus {
     address payable[] private s_players;
 
     /* Events */
-    event Players (address indexed player);
+    event Players(address indexed player);
     event RequestId(uint256 indexed requestId);
     event Winner(address indexed winner);
 
     /* Modifiers */
-     
-     /**
-      * @dev the constructor would need the following to be provided during deployment
-      * @dev enteranceFee: the minimum amount required to perticipate in the raffle
-      * @dev interval: The required time that should pass before a winner is been picked
-      * @dev vrfCoordinator: The address of the contract our address will call to request random word
-      * @dev KeyHash: It is an address used to tell the VRFCoordinator which oracle get to generate
-      * @dev and sign our random words
-      * @dev subscriptionId: It is a unique ID tied to an account that holds link. from the ID, 
-      * @dev The VRFCoordinator already knows the account to spend from when calling fulfillRandomWords
-      * @dev on this contract
-      * @dev callbackGasLimit: The maximum amount of gas you are willing to spend when fulfillRandomWords
-      * @dev is been called by the VRFCoordinator
-      */
+
+    /**
+     * @dev the constructor would need the following to be provided during deployment
+     * @dev enteranceFee: the minimum amount required to perticipate in the raffle
+     * @dev interval: The required time that should pass before a winner is been picked
+     * @dev vrfCoordinator: The address of the contract our address will call to request random word
+     * @dev KeyHash: It is an address used to tell the VRFCoordinator which oracle get to generate
+     * @dev and sign our random words
+     * @dev subscriptionId: It is a unique ID tied to an account that holds link. from the ID,
+     * @dev The VRFCoordinator already knows the account to spend from when calling fulfillRandomWords
+     * @dev on this contract
+     * @dev callbackGasLimit: The maximum amount of gas you are willing to spend when fulfillRandomWords
+     * @dev is been called by the VRFCoordinator
+     */
     /* Constructor */
-    constructor(uint256 enteranceFee,
-    uint256 interval,
-    address vrfCoordinator,
-    bytes32 keyHash,
-    uint256 subscriptionId,
-    uint32 callbackGasLimit) VRFConsumerBaseV2Plus(vrfCoordinator) {
+    constructor(
+        uint256 enteranceFee,
+        uint256 interval,
+        address vrfCoordinator,
+        bytes32 keyHash,
+        uint256 subscriptionId,
+        uint32 callbackGasLimit
+    ) VRFConsumerBaseV2Plus(vrfCoordinator) {
         i_enteranceFee = enteranceFee;
         s_raffleState = RaffleState.OPEN;
         s_lastTimeStamp = block.timestamp;
@@ -78,30 +79,29 @@ contract Raffle is VRFConsumerBaseV2Plus {
 
     /* Function */
     function joinRaffle() public payable {
-        if(msg.value < i_enteranceFee) {
+        if (msg.value < i_enteranceFee) {
             revert Raffle__EnteranceFeeNotMet();
         }
-        if(s_raffleState != RaffleState.OPEN) {
+        if (s_raffleState != RaffleState.OPEN) {
             revert Raffle__RaffleIsPickingWinner();
         }
         s_players.push(payable(msg.sender));
         emit Players(msg.sender);
-    
     }
 
-    function getRaffleState() external view returns(RaffleState) {
+    function getRaffleState() external view returns (RaffleState) {
         return s_raffleState;
     }
 
-    function getPlayersAddress(uint256 index) external view returns(address) {
+    function getPlayersAddress(uint256 index) external view returns (address) {
         return s_players[index];
     }
-    
+
     /**
      * @dev checkUpkeep is a condition that must be TRUE for us to be able to request a random number
      * @dev from the chainlink VRFCoordinator
      */
-    function checkUpkeep() public view returns(bool upkeepNeeded) {
+    function checkUpkeep() public view returns (bool upkeepNeeded) {
         bool hasPlayers = s_players.length > 0;
         bool hasBalance = address(this).balance > 0;
         bool timeHasPassed = (block.timestamp - s_lastTimeStamp) >= i_interval;
@@ -109,27 +109,25 @@ contract Raffle is VRFConsumerBaseV2Plus {
     }
 
     /**
-     * @dev after checkUpkeep has return true, peformUpkeep is will call VRFCoordinator to request 
-     * @dev randomWords 
+     * @dev after checkUpkeep has return true, peformUpkeep is will call VRFCoordinator to request
+     * @dev randomWords
      */
 
     function performUpkeep() public {
-       bool upkeepNeeded = checkUpkeep();
-       if(!upkeepNeeded) {
-        revert Raffle__CantPeformUpkeep();
-       }
+        bool upkeepNeeded = checkUpkeep();
+        if (!upkeepNeeded) {
+            revert Raffle__CantPeformUpkeep();
+        }
 
         s_raffleState = RaffleState.PICKING_WINNER;
 
         VRFV2PlusClient.RandomWordsRequest memory request = VRFV2PlusClient.RandomWordsRequest({
-        keyHash: i_keyHash,
-        subId: i_subscriptionId, 
-        requestConfirmations: REQUEST_CONFIRMATION,
-        callbackGasLimit: i_callbackGasLimit,
-        numWords: NUM_WORDS,
-        extraArgs: VRFV2PlusClient._argsToBytes(VRFV2PlusClient.ExtraArgsV1({
-            nativePayment: false
-        }))
+            keyHash: i_keyHash,
+            subId: i_subscriptionId,
+            requestConfirmations: REQUEST_CONFIRMATION,
+            callbackGasLimit: i_callbackGasLimit,
+            numWords: NUM_WORDS,
+            extraArgs: VRFV2PlusClient._argsToBytes(VRFV2PlusClient.ExtraArgsV1({nativePayment: false}))
         });
         uint256 requestId = s_vrfCoordinator.requestRandomWords(request);
         emit RequestId(requestId);
@@ -137,23 +135,28 @@ contract Raffle is VRFConsumerBaseV2Plus {
 
     /**
      * @dev after calling pefromUpkeep, the VRFCoordinator generate the random number offline and
-     * @dev call back our contract through the fulfillRandomWords to return the random Numbers it has 
+     * @dev call back our contract through the fulfillRandomWords to return the random Numbers it has
      * @dev generated
      */
 
-    function fulfillRandomWords(uint256 /* requestId */, uint256[] calldata randomWords) internal override {
+    function fulfillRandomWords(
+        uint256,
+        /* requestId */
+        uint256[] calldata randomWords
+    )
+        internal
+        override
+    {
         uint256 index = randomWords[0] % s_players.length;
         address winner = s_players[index];
         s_recentWinner = winner;
         s_raffleState = RaffleState.OPEN;
-        s_players= new address payable[] (0);
+        s_players = new address payable[](0);
         emit Winner(s_recentWinner);
 
-        (bool success,) = payable(s_recentWinner).call{
-            value: address(this).balance
-        }("");
+        (bool success,) = payable(s_recentWinner).call{value: address(this).balance}("");
 
-        if(!success) {
+        if (!success) {
             revert Raffle__RewardFailed();
         }
     }
@@ -164,14 +167,11 @@ contract Raffle is VRFConsumerBaseV2Plus {
 
     function transferBadWinner() public {
         BadWinner badWinner = new BadWinner();
-        (bool Success,) = payable(address(badWinner)).call{
-            value: address(this).balance
-        }("");
-        if(!Success) {
+        (bool Success,) = payable(address(badWinner)).call{value: address(this).balance}("");
+        if (!Success) {
             revert Raffle__RewardFailed();
         }
     }
-
 }
 
-contract BadWinner{}
+contract BadWinner {}

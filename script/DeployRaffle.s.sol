@@ -15,28 +15,28 @@ contract DeployRaffle is Script {
         HelperConfig helperConfig = new HelperConfig();
         HelperConfig.NetworkConfig memory config = helperConfig.getConfig();
         console.log("account being used:", config.account);
-        if(config.subscriptionId == 0) {
+        if (config.subscriptionId == 0) {
             CreateSubscription createSubscription = new CreateSubscription();
-            (config.subscriptionId, config.vrfCoordinator) = 
-            createSubscription.createSubscription(config.vrfCoordinator, config.account);
+            (config.subscriptionId, config.vrfCoordinator) =
+                createSubscription.createSubscription(config.vrfCoordinator, config.account);
 
             FundSubscription fundSubscription = new FundSubscription();
-            fundSubscription.fundSubscription(config.vrfCoordinator,
-            config.account, config.link, config.subscriptionId);
+            fundSubscription.fundSubscription(config.vrfCoordinator, config.account, config.link, config.subscriptionId);
         }
 
         vm.startBroadcast(config.account);
-        Raffle raffle = new Raffle(config.enteranceFee,
-         config.interval,
-         config.vrfCoordinator,
-         config.keyHash,
-         config.subscriptionId,
-         config.callbackGasLimit);
+        Raffle raffle = new Raffle(
+            config.enteranceFee,
+            config.interval,
+            config.vrfCoordinator,
+            config.keyHash,
+            config.subscriptionId,
+            config.callbackGasLimit
+        );
         vm.stopBroadcast();
 
         AddConsumer addConsumer = new AddConsumer();
-        addConsumer.addConsumer(config.subscriptionId, address(raffle),
-        config.account, config.vrfCoordinator);
+        addConsumer.addConsumer(config.subscriptionId, address(raffle), config.account, config.vrfCoordinator);
         return (raffle, helperConfig);
     }
 }
