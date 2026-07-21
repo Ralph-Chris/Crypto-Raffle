@@ -49,15 +49,14 @@ contract Raffle is VRFConsumerBaseV2Plus {
     /**
      * @dev the constructor would need the following to be provided during deployment
      * @dev enteranceFee: the minimum amount required to perticipate in the raffle
-     * @dev interval: The required time that should pass before a winner is been picked
-     * @dev vrfCoordinator: The address of the contract our address will call to request random word
-     * @dev KeyHash: It is an address used to tell the VRFCoordinator which oracle get to generate
-     * @dev and sign our random words
-     * @dev subscriptionId: It is a unique ID tied to an account that holds link. from the ID,
-     * @dev The VRFCoordinator already knows the account to spend from when calling fulfillRandomWords
-     * @dev on this contract
+     * @dev interval: The required time that should pass for the winner to be picked
+     * @dev vrfCoordinator: VRF-Coordinator address that would provide our contract the 
+     * random word
+     * @dev KeyHash: address that has the required gas-lane and amount of time we are 
+     * willing to spend when calling chainlink VRF for random words
+     * @dev subscriptionId: an account that contains sufficient link for the callback transaction
      * @dev callbackGasLimit: The maximum amount of gas you are willing to spend when fulfillRandomWords
-     * @dev is been called by the VRFCoordinator
+     * is been called by the VRFCoordinator
      */
     /* Constructor */
     constructor(
@@ -66,8 +65,8 @@ contract Raffle is VRFConsumerBaseV2Plus {
         address vrfCoordinator,
         bytes32 keyHash,
         uint256 subscriptionId,
-        uint32 callbackGasLimit
-    ) VRFConsumerBaseV2Plus(vrfCoordinator) {
+        uint32 callbackGasLimit) VRFConsumerBaseV2Plus(vrfCoordinator) 
+        {
         i_enteranceFee = enteranceFee;
         s_raffleState = RaffleState.OPEN;
         s_lastTimeStamp = block.timestamp;
@@ -78,6 +77,7 @@ contract Raffle is VRFConsumerBaseV2Plus {
     }
 
     /* Function */
+
     function joinRaffle() public payable {
         if (msg.value < i_enteranceFee) {
             revert Raffle__EnteranceFeeNotMet();
@@ -98,7 +98,8 @@ contract Raffle is VRFConsumerBaseV2Plus {
     }
 
     /**
-     * @dev checkUpkeep is a condition that must be TRUE for us to be able to request a random number
+     * @dev checkUpkeep is a condition that checks to ensure the contract has enough players,
+     * has balance above zero, and the required time interval has passed.
      * @dev from the chainlink VRFCoordinator
      */
     function checkUpkeep() public view returns (bool upkeepNeeded) {
@@ -109,8 +110,9 @@ contract Raffle is VRFConsumerBaseV2Plus {
     }
 
     /**
-     * @dev after checkUpkeep has return true, peformUpkeep is will call VRFCoordinator to request
-     * @dev randomWords
+     * @dev performUpkeep is the function that request the random word from the chainlink VRF.
+     * if first calls checkUpkeep to ensure that certain conditions are met before requesting
+     * random words.
      */
 
     function performUpkeep() public {
@@ -134,9 +136,8 @@ contract Raffle is VRFConsumerBaseV2Plus {
     }
 
     /**
-     * @dev after calling pefromUpkeep, the VRFCoordinator generate the random number offline and
-     * @dev call back our contract through the fulfillRandomWords to return the random Numbers it has
-     * @dev generated
+     * @dev fulfillRandomWords is the function The VRF Coordinator call after generating
+     * the random words.
      */
 
     function fulfillRandomWords(

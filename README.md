@@ -4,15 +4,15 @@ A decentralized, provably-fair raffle smart contract built with Foundry, using C
 
 ## Overview
 
-CryptoRaffle lets players join a raffle by paying a fixed entrance fee in ETH. Once a set time interval has passed (and at least one player has joined), the contract requests a verifiably random number from Chainlink VRF to pick a winner. The entire prize pool — all accumulated entrance fees — is then transferred to the winner automatically.
+CryptoRaffle lets players join a raffle by paying a fixed entrance fee in ETH(0.001 ether which is equivalent to $2USD as of writing). Once a set time interval has passed (and at least one player has joined), the contract requests a verifiably random number from Chainlink VRF to pick a winner. The entire prize pool, all accumulated entrance fees — is then transferred to the winner automatically.
 
 Because winner selection relies on Chainlink VRF rather than on-chain pseudo-randomness (like `block.timestamp` or `blockhash`), the result can't be predicted or manipulated by miners, validators, or the contract owner.
 
 ## How It Works
 
-1. **Join** — Players call `joinRaffle()` with at least `i_enteranceFee` in ETH. Joining is only allowed while the raffle is `OPEN`.
-2. **Check eligibility** — `checkUpkeep()` returns `true` once there's at least one player, the contract holds a balance, and the configured time interval has elapsed since the last round.
-3. **Request randomness** — `peformUpkeep()` (intended to be triggered by Chainlink Automation) verifies the upkeep conditions, flips the raffle into `PICKING_WINNER` state, and requests a random word from the Chainlink VRF Coordinator.
+1. **Join** — Players call `joinRaffle()` with at least `0.001 ETH`. Joining is only allowed while the raffle is `OPEN`. a player wouldn't be able to join when the contrac is picking winner.
+2. **Check eligibility** — `checkUpkeep()` returns `true` once there's at least one player, the contract holds a balance, and the configured time interval has elapsed since the last round ( time Interval = 1 day).
+3. **Request randomness** — `peformUpkeep()` (intended to be triggered by Chainlink Automation) verifies the upkeep conditions, flips the raffle into `PICKING_WINNER` state, and requests a random number from the Chainlink VRF Coordinator.
 4. **Pick & pay the winner** — Once Chainlink's oracle responds, `fulfillRandomWords()` uses the random value to index into the player list, selects the winner, resets the raffle, and transfers the entire contract balance to the winner via a low-level `call`. If the transfer fails (e.g. the winner is a contract that rejects ETH), the transaction reverts with `Raffle__RewardFailed`.
 
 ## Built With
@@ -21,7 +21,7 @@ Because winner selection relies on Chainlink VRF rather than on-chain pseudo-ran
 - [Foundry](https://book.getfoundry.sh/) (Forge, Cast, Anvil)
 - [Chainlink VRF v2.5](https://docs.chain.link/vrf/v2-5/overview) for verifiable randomness
 - [Chainlink Automation](https://docs.chain.link/chainlink-automation) for triggering upkeep
-- Sepolia Testnet
+- Sepolia Testnet 
 
 ## Project Structure
 
@@ -85,12 +85,11 @@ On a local chain (`chainid 31337`), `HelperConfig.s.sol` automatically deploys a
 ### Deploy to Sepolia
 
 ```bash
-forge script script/DeployRaffle.s.sol:DeployRaffle --rpc-url $SEPOLIA_RPC_URL --account <your-keystore> --broadcast --verify --etherscan-api-key $ETHERSCAN_API_KEY
+forge script script/DeployRaffle.s.sol:DeployRaffle --rpc-url $SEPOLIA_RPC_URL --account <YOUR_PRIVATE_KEY> --broadcast --verify --etherscan-api-key $ETHERSCAN_API_KEY
 ```
 
 On Sepolia, `HelperConfig.s.sol` supplies the real Chainlink VRF Coordinator address, key hash, and LINK token address for the network.
 
-> **Note:** Chainlink Automation's support for triggering upkeep on testnets is being phased out (June 2026). `peformUpkeep()` may need to be called manually for demonstration purposes rather than via live Automation on Sepolia.
 
 ## Key Parameters
 
