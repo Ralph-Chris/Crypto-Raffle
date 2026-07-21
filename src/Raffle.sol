@@ -50,9 +50,9 @@ contract Raffle is VRFConsumerBaseV2Plus {
      * @dev the constructor would need the following to be provided during deployment
      * @dev enteranceFee: the minimum amount required to perticipate in the raffle
      * @dev interval: The required time that should pass for the winner to be picked
-     * @dev vrfCoordinator: VRF-Coordinator address that would provide our contract the 
+     * @dev vrfCoordinator: VRF-Coordinator address that would provide our contract the
      * random word
-     * @dev KeyHash: address that has the required gas-lane and amount of time we are 
+     * @dev KeyHash: address that has the required gas-lane and amount of time we are
      * willing to spend when calling chainlink VRF for random words
      * @dev subscriptionId: an account that contains sufficient link for the callback transaction
      * @dev callbackGasLimit: The maximum amount of gas you are willing to spend when fulfillRandomWords
@@ -65,8 +65,8 @@ contract Raffle is VRFConsumerBaseV2Plus {
         address vrfCoordinator,
         bytes32 keyHash,
         uint256 subscriptionId,
-        uint32 callbackGasLimit) VRFConsumerBaseV2Plus(vrfCoordinator) 
-        {
+        uint32 callbackGasLimit
+    ) VRFConsumerBaseV2Plus(vrfCoordinator) {
         i_enteranceFee = enteranceFee;
         s_raffleState = RaffleState.OPEN;
         s_lastTimeStamp = block.timestamp;
